@@ -4,7 +4,11 @@ module Parser (
     satisfy,
     many,
     some,
-    combine
+    combine,
+    combine3,
+    alternative,
+    optional,
+    pmap
   ) where
 
 type Parser a = String -> Maybe (a, String)
@@ -53,3 +57,31 @@ combine p q =
           Nothing       -> Nothing
       Nothing ->
         Nothing
+
+combine3 :: Parser a -> Parser b -> Parser c -> Parser (a, b, c)
+combine3 p q r =
+  \s ->
+    case (p `combine` q `combine` r) s of
+      Just (((a, b), c), s') -> Just ((a, b, c), s')
+      Nothing          -> Nothing
+
+alternative :: Parser a -> Parser a -> Parser a
+alternative p q =
+  \s ->
+    case p s of
+      Nothing -> q s
+      smth    -> smth
+
+optional :: Parser a -> Parser (Maybe a)
+optional p =
+  \s ->
+    case p s of
+      Nothing      -> Just (Nothing, s)
+      Just (a, s') -> Just (Just a, s')
+
+pmap :: Parser a -> (a -> b) -> Parser b
+pmap p f =
+  \s ->
+    case p s of
+      Just (a, s') -> Just(f a, s')
+      Nothing      -> Nothing
